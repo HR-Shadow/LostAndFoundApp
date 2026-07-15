@@ -1,0 +1,68 @@
+<resources>
+    <string name="app_name">Lost &amp; Found</string>
+    <string name="login_subtitle">Reconnect with what matters most</string>
+    <string name="signup_subtitle">Create your account to report lost or found items</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="full_name">Full Name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="sign_in">Sign In</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="creating_account">Creating account…</string>
+    <string name="create_account">Create Account</string>
+    <string name="no_account_sign_up">Don\'t have an account? Sign Up</string>
+    <string name="already_have_account">Already have an account? Sign In</string>
+    <string name="back">Back</string>
+    <string name="home">Home</string>
+    <string name="welcome_user">Welcome, %1$s!</string>
+    <string name="home_placeholder">You\'re signed in. Next up: report lost &amp; found items, matching, and chat.</string>
+    <string name="home_step2_placeholder">Report a lost or found item to help reunite people with their belongings.</string>
+    <string name="home_step3_placeholder">Report items and check possible matches to reunite owners with finders.</string>
+    <string name="sign_out">Sign Out</string>
+
+    <!-- Report Item -->
+    <string name="report_lost">Report Lost Item</string>
+    <string name="report_found">Report Found Item</string>
+    <string name="item_name">Item Name</string>
+    <string name="category">Category</string>
+    <string name="description">Description</string>
+    <string name="date_lost">Date Lost</string>
+    <string name="date_found">Date Found</string>
+    <string name="location_lost">Location Lost</string>
+    <string name="location_found">Location Found</string>
+    <string name="location_map_hint">Enter the place name or address. Map picker coming in a later step.</string>
+    <string name="identifying_details">Identifying Details</string>
+    <string name="identifying_details_hint">e.g. scratch on back, name written inside</string>
+    <string name="submit_lost_report">Submit Lost Report</string>
+    <string name="submit_found_report">Submit Found Report</string>
+    <string name="submitting">Submitting…</string>
+    <string name="lost_report_success">Lost item reported successfully!</string>
+    <string name="found_report_success">Found item reported successfully!</string>
+    <string name="photo_optional">Photo (optional)</string>
+    <string name="no_photo_selected">No photo selected</string>
+    <string name="add_photo">Add Photo</string>
+    <string name="change_photo">Change Photo</string>
+    <string name="remove_photo">Remove photo</string>
+
+    <!-- Matching -->
+    <string name="possible_matches">Possible Matches</string>
+    <string name="match_score">%1$d%% match</string>
+    <string name="lost_item_label">Lost Item</string>
+    <string name="found_item_label">Found Item</string>
+    <string name="this_is_mine">This is mine</string>
+    <string name="this_matches">I think this matches</string>
+    <string name="not_a_match">Not a match</string>
+    <string name="waiting_other_user">Waiting for the other user to confirm.</string>
+    <string name="match_confirmed_message">Both users confirmed! You can now chat to verify and arrange the return.</string>
+    <string name="chat_now">Chat Now</string>
+    <string name="match_rejected_message">This match was rejected.</string>
+    <string name="status_pending">Pending</string>
+    <string name="status_confirmed">Confirmed</string>
+    <string name="status_rejected">Rejected</string>
+    <string name="pending_matches_header">Needs your review</string>
+    <string name="past_matches_header">Past matches</string>
+    <string name="no_matches_yet">No possible matches yet</string>
+    <string name="no_matches_hint">Report a lost or found item with similar details. Matches appear automatically when the algorithm finds a fit.</string>
+</resources>
