@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.Report
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,6 +40,7 @@ fun HomeScreen(
     onReportLost: () -> Unit,
     onReportFound: () -> Unit,
     onViewMatches: () -> Unit,
+    onViewNotifications: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Scaffold(
@@ -120,6 +122,21 @@ fun HomeScreen(
                 Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null)
                 Text(
                     text = stringResource(R.string.possible_matches),
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = onViewNotifications,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Icon(imageVector = Icons.Outlined.NotificationsNone, contentDescription = null)
+                Text(
+                    text = "Notifications",
                     modifier = Modifier.padding(start = 8.dp),
                     style = MaterialTheme.typography.titleMedium
                 )

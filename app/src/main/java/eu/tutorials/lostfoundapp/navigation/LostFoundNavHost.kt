@@ -14,6 +14,7 @@ import eu.tutorials.lostfoundapp.ui.auth.SignUpScreen
 import eu.tutorials.lostfoundapp.ui.components.LoadingScreen
 import eu.tutorials.lostfoundapp.ui.home.HomeScreen
 import eu.tutorials.lostfoundapp.ui.matches.MatchesScreen
+import eu.tutorials.lostfoundapp.ui.notifications.NotificationHubScreen
 import eu.tutorials.lostfoundapp.ui.report.ReportFoundScreen
 import eu.tutorials.lostfoundapp.ui.report.ReportLostScreen
 import eu.tutorials.lostfoundapp.ui.screens.ChatScreen
@@ -42,6 +43,7 @@ fun LostFoundNavHost(
                         onReportLost = { mainNavController.navigate(NavRoutes.REPORT_LOST) },
                         onReportFound = { mainNavController.navigate(NavRoutes.REPORT_FOUND) },
                         onViewMatches = { mainNavController.navigate(NavRoutes.MATCHES) },
+                        onViewNotifications = { mainNavController.navigate(NavRoutes.NOTIFICATIONS) },
                         onSignOut = authViewModel::signOut
                     )
                 }
@@ -77,6 +79,13 @@ fun LostFoundNavHost(
                     ReportFoundScreen(
                         onNavigateBack = { mainNavController.popBackStack() },
                         onReportSuccess = { mainNavController.popBackStack() }
+                    )
+                }
+                composable(NavRoutes.NOTIFICATIONS) {
+                    NotificationHubScreen(
+                        onViewMatch = { matchId ->
+                            mainNavController.navigate(NavRoutes.chatRoute(matchId))
+                        }
                     )
                 }
             }
