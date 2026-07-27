@@ -8,6 +8,8 @@ object NavRoutes {
     const val REPORT_FOUND = "report_found"
     const val MATCHES = "matches"
     const val NOTIFICATIONS = "notifications"
+
+    const val AI_ASSISTANT = "ai_assistant"
     const val CHAT = "chat/{matchId}"
 
     fun chatRoute(matchId: String): String = "chat/$matchId"

@@ -12,7 +12,7 @@ navigationCompose = "2.8.9"
 lifecycleViewmodelCompose = "2.8.7"
 coroutines = "1.9.0"
 coil = "2.7.0"
-firebaseBom = "33.9.0"
+firebaseBom = "34.16.0"
 googleServices = "4.4.2"
 desugarJdkLibs = "2.1.4"
 
@@ -38,10 +38,11 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx" }
-firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
-firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx" }
-firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
+firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore" }
+firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage" }
+firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging" }
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]

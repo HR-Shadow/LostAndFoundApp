@@ -53,18 +53,19 @@ fun HomeScreen(
     onReportFound: () -> Unit,
     onViewMatches: () -> Unit,
     onViewNotifications: () -> Unit,
+    onOpenAiAssistant: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(R.string.home),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
-                    ) 
+                    )
                 },
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -82,14 +83,14 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            
+
             // Semi-transparent dark overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
             )
-            
+
             // Content column
             Column(
                 modifier = Modifier
@@ -122,7 +123,7 @@ fun HomeScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Welcome text
                 Text(
                     text = stringResource(R.string.welcome_user, user?.name?.ifBlank { "User" } ?: "User"),
@@ -138,7 +139,7 @@ fun HomeScreen(
                     )
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Subtitle text
                 Text(
                     text = stringResource(R.string.home_step3_placeholder),
@@ -455,6 +456,88 @@ fun HomeScreen(
                                 }
                                 Text(
                                     text = "Notifications",
+                                    modifier = Modifier.padding(start = 12.dp),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // AI Assistant button - Outlined glass style
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .shadow(
+                            elevation = 6.dp,
+                            shape = RoundedCornerShape(20.dp),
+                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.2f),
+                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.2f)
+                        )
+                ) {
+                    OutlinedButton(
+                        onClick = onOpenAiAssistant,
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF6B4CE6).copy(alpha = 0.6f),
+                                    Color(0xFF4A7BD6).copy(alpha = 0.6f)
+                                )
+                            )
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color(0xFF6B4CE6).copy(alpha = 0.15f),
+                                            Color(0xFF4A7BD6).copy(alpha = 0.15f)
+                                        )
+                                    ),
+                                    shape = RoundedCornerShape(20.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            brush = Brush.radialGradient(
+                                                colors = listOf(
+                                                    Color(0xFF6B4CE6).copy(alpha = 0.4f),
+                                                    Color.Transparent
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(20.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "Ask AI Assistant",
                                     modifier = Modifier.padding(start = 12.dp),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,

@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import eu.tutorials.lostfoundapp.ui.aiassistant.AiAssistantScreen
 import eu.tutorials.lostfoundapp.ui.auth.LoginScreen
 import eu.tutorials.lostfoundapp.ui.auth.SignUpScreen
 import eu.tutorials.lostfoundapp.ui.components.LoadingScreen
@@ -44,6 +45,7 @@ fun LostFoundNavHost(
                         onReportFound = { mainNavController.navigate(NavRoutes.REPORT_FOUND) },
                         onViewMatches = { mainNavController.navigate(NavRoutes.MATCHES) },
                         onViewNotifications = { mainNavController.navigate(NavRoutes.NOTIFICATIONS) },
+                        onOpenAiAssistant = { mainNavController.navigate(NavRoutes.AI_ASSISTANT) },
                         onSignOut = authViewModel::signOut
                     )
                 }
@@ -86,6 +88,11 @@ fun LostFoundNavHost(
                         onViewMatch = { matchId ->
                             mainNavController.navigate(NavRoutes.chatRoute(matchId))
                         }
+                    )
+                }
+                composable(NavRoutes.AI_ASSISTANT) {
+                    AiAssistantScreen(
+                        onNavigateBack = { mainNavController.popBackStack() }
                     )
                 }
             }
