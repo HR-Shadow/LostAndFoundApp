@@ -131,10 +131,15 @@ fun MatchesScreen(
                         items(otherMatches, key = { it.match.matchId }) { match ->
                             MatchCard(
                                 matchDetails = match,
-                                isActionInProgress = false,
+                                isActionInProgress = state.actionInProgress == match.match.matchId,
                                 onConfirm = {},
                                 onReject = {},
-                                onOpenChat = { onNavigateToChat(match.match.matchId) }
+                                onOpenChat = {
+                                    onNavigateToChat(match.match.matchId)
+                                },
+                                onHide = {
+                                    viewModel.hideMatch(match.match.matchId)
+                                }
                             )
                         }
                     }

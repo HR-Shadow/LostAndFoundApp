@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -24,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -32,7 +35,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -66,6 +68,24 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                },
+                actions = {
+                    IconButton(onClick = onViewNotifications) {
+                        Icon(
+                            imageVector = Icons.Outlined.NotificationsNone,
+                            contentDescription = "Notifications",
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                    IconButton(onClick = onOpenAiAssistant) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "AI Assistant",
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 },
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -301,247 +321,68 @@ fun HomeScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-                // Possible Matches button - Outlined glass style
+                // Possible Matches button - Circular, centered, medium size
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
+                        .size(110.dp)
                         .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.2f),
-                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.2f)
+                            elevation = 10.dp,
+                            shape = CircleShape,
+                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.4f),
+                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.4f)
                         )
                 ) {
                     OutlinedButton(
                         onClick = onViewMatches,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        shape = CircleShape,
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color.White
                         ),
                         border = BorderStroke(
-                            width = 1.dp,
+                            width = 1.5.dp,
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     Color(0xFF6B4CE6).copy(alpha = 0.6f),
                                     Color(0xFF4A7BD6).copy(alpha = 0.6f)
                                 )
                             )
-                        )
+                        ),
+                        contentPadding = PaddingValues(4.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    brush = Brush.horizontalGradient(
+                                    brush = Brush.radialGradient(
                                         colors = listOf(
-                                            Color(0xFF6B4CE6).copy(alpha = 0.15f),
+                                            Color(0xFF6B4CE6).copy(alpha = 0.2f),
                                             Color(0xFF4A7BD6).copy(alpha = 0.15f)
                                         )
                                     ),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color(0xFF6B4CE6).copy(alpha = 0.4f),
-                                                    Color.Transparent
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(20.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CompareArrows,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.CompareArrows,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = stringResource(R.string.possible_matches),
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Notifications button - Outlined glass style
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color(0xFF4A7BD6).copy(alpha = 0.2f),
-                            spotColor = Color(0xFF4A7BD6).copy(alpha = 0.2f)
-                        )
-                ) {
-                    OutlinedButton(
-                        onClick = onViewNotifications,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFF4A7BD6).copy(alpha = 0.6f),
-                                    Color(0xFF6B4CE6).copy(alpha = 0.6f)
-                                )
-                            )
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color(0xFF4A7BD6).copy(alpha = 0.15f),
-                                            Color(0xFF6B4CE6).copy(alpha = 0.15f)
-                                        )
-                                    ),
-                                    shape = RoundedCornerShape(20.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color(0xFF4A7BD6).copy(alpha = 0.4f),
-                                                    Color.Transparent
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(20.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.NotificationsNone,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Text(
-                                    text = "Notifications",
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // AI Assistant button - Outlined glass style
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.2f),
-                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.2f)
-                        )
-                ) {
-                    OutlinedButton(
-                        onClick = onOpenAiAssistant,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFF6B4CE6).copy(alpha = 0.6f),
-                                    Color(0xFF4A7BD6).copy(alpha = 0.6f)
-                                )
-                            )
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color(0xFF6B4CE6).copy(alpha = 0.15f),
-                                            Color(0xFF4A7BD6).copy(alpha = 0.15f)
-                                        )
-                                    ),
-                                    shape = RoundedCornerShape(20.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color(0xFF6B4CE6).copy(alpha = 0.4f),
-                                                    Color.Transparent
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(20.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Text(
-                                    text = "Ask AI Assistant",
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }

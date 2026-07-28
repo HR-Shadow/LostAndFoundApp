@@ -108,7 +108,40 @@ class MatchesViewModel(
                 }
         }
     }
+    fun hideMatch(matchId: String) {
+        viewModelScope.launch {
 
+            _uiState.update {
+                it.copy(
+                    actionInProgress = matchId,
+                    errorMessage = null
+                )
+            }
+
+            matchRepository.hideMatchForCurrentUser(matchId)
+                .onSuccess {
+
+                    _uiState.update {
+                        it.copy(
+                            actionInProgress = null,
+                            successMessage = "Match removed from your list."
+                        )
+                    }
+
+                }
+                .onFailure { error ->
+
+                    _uiState.update {
+                        it.copy(
+                            actionInProgress = null,
+                            errorMessage = error.message
+                                ?: "Failed to remove match"
+                        )
+                    }
+
+                }
+        }
+    }
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }

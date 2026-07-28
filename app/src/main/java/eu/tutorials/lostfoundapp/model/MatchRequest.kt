@@ -11,8 +11,12 @@ data class MatchRequest(
     val foundUserConfirmed: Boolean = false,
     val matchScore: Double = 0.0,
     val timestamp: Long = System.currentTimeMillis(),
-    val participants: List<String> = emptyList()
+    val participants: List<String> = emptyList(),
+
+    // NEW FIELD
+    val hiddenFor: List<String> = emptyList()
 ) {
+
     fun toMap(): Map<String, Any?> = mapOf(
         "matchId" to matchId,
         "lostItemId" to lostItemId,
@@ -24,23 +28,55 @@ data class MatchRequest(
         "foundUserConfirmed" to foundUserConfirmed,
         "matchScore" to matchScore,
         "timestamp" to timestamp,
-        "participants" to listOf(lostUserId, foundUserId)
+        "participants" to listOf(lostUserId, foundUserId),
+
+        // NEW FIELD
+        "hiddenFor" to hiddenFor
     )
 
     companion object {
-        fun fromMap(map: Map<String, Any?>): MatchRequest = MatchRequest(
-            matchId = map["matchId"] as? String ?: "",
-            lostItemId = map["lostItemId"] as? String ?: "",
-            foundItemId = map["foundItemId"] as? String ?: "",
-            lostUserId = map["lostUserId"] as? String ?: "",
-            foundUserId = map["foundUserId"] as? String ?: "",
-            status = map["status"] as? String ?: MatchStatus.PENDING.value,
-            lostUserConfirmed = map["lostUserConfirmed"] as? Boolean ?: false,
-            foundUserConfirmed = map["foundUserConfirmed"] as? Boolean ?: false,
-            matchScore = (map["matchScore"] as? Number)?.toDouble() ?: 0.0,
-            timestamp = (map["timestamp"] as? Number)?.toLong() ?: 0L,
-            participants = (map["participants"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-        )
+
+        fun fromMap(map: Map<String, Any?>): MatchRequest {
+
+            return MatchRequest(
+
+                matchId = map["matchId"] as? String ?: "",
+
+                lostItemId = map["lostItemId"] as? String ?: "",
+
+                foundItemId = map["foundItemId"] as? String ?: "",
+
+                lostUserId = map["lostUserId"] as? String ?: "",
+
+                foundUserId = map["foundUserId"] as? String ?: "",
+
+                status = map["status"] as? String
+                    ?: MatchStatus.PENDING.value,
+
+                lostUserConfirmed =
+                    map["lostUserConfirmed"] as? Boolean ?: false,
+
+                foundUserConfirmed =
+                    map["foundUserConfirmed"] as? Boolean ?: false,
+
+                matchScore =
+                    (map["matchScore"] as? Number)?.toDouble() ?: 0.0,
+
+                timestamp =
+                    (map["timestamp"] as? Number)?.toLong() ?: 0L,
+
+                participants =
+                    (map["participants"] as? List<*>)
+                        ?.filterIsInstance<String>()
+                        ?: emptyList(),
+
+                // NEW FIELD
+                hiddenFor =
+                    (map["hiddenFor"] as? List<*>)
+                        ?.filterIsInstance<String>()
+                        ?: emptyList()
+            )
+        }
     }
 }
 

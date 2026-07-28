@@ -3,6 +3,7 @@ package eu.tutorials.lostfoundapp.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.FieldValue
 import eu.tutorials.lostfoundapp.model.FoundItem
 import eu.tutorials.lostfoundapp.model.ItemStatus
 import eu.tutorials.lostfoundapp.model.LostItem
@@ -14,6 +15,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlin.text.get
 
 class MatchRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -107,20 +109,32 @@ class MatchRepository(
 
     // FIXED: Fake bypass hataya, ab yeh real match_requests database se real-time entries trigger karega
     fun observeUserMatches(): Flow<List<MatchRequest>> = callbackFlow {
+
         val listener = firestore.collection(MATCH_REQUESTS)
             .whereArrayContains("participants", currentUserId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
+
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
                 }
+
                 val matches = snapshot?.documents
-                    ?.mapNotNull { doc -> doc.data?.let { MatchRequest.fromMap(it) } }
+                    ?.mapNotNull { doc ->
+                        doc.data?.let { MatchRequest.fromMap(it) }
+                    }
+                    ?.filter {
+                        !it.hiddenFor.contains(currentUserId)
+                    }
                     ?: emptyList()
+
                 trySend(matches)
             }
-        awaitClose { listener.remove() }
+
+        awaitClose {
+            listener.remove()
+        }
     }
 
     suspend fun loadMatchDetails(matches: List<MatchRequest>): List<MatchWithDetails> {
@@ -207,5 +221,28 @@ class MatchRepository(
         firestore.collection(collection).document(itemId)
             .update("status", status)
             .await()
+    }
+    suspend fun hideMatchForCurrentUser(matchId: String): Result<Unit> = runCatching {
+
+        val docRef = firestore.collection(MATCH_REQUESTS).document(matchId)
+
+        val snapshot = docRef.get().await()
+
+        val match = MatchRequest.fromMap(
+            snapshot.data
+                ?: throw IllegalStateException("Match not found")
+        )
+
+        require(
+            match.lostUserId == currentUserId ||
+                    match.foundUserId == currentUserId
+        ) {
+            "Not authorized"
+        }
+
+        docRef.update(
+            "hiddenFor",
+            FieldValue.arrayUnion(currentUserId)
+        ).await()
     }
 }

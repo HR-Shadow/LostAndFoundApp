@@ -3,6 +3,8 @@ package eu.tutorials.lostfoundapp.ui.matches
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +42,7 @@ fun MatchCard(
     onConfirm: () -> Unit,
     onReject: () -> Unit,
     onOpenChat: () -> Unit = {},
+    onHide: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val match = matchDetails.match
@@ -143,28 +146,54 @@ fun MatchCard(
                     }
                 }
                 MatchStatus.CONFIRMED -> {
+
                     Text(
                         text = stringResource(R.string.match_confirmed_message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Button(
-                        onClick = onOpenChat,
+
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Chat,
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.chat_now),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
+
+                        Button(
+                            onClick = onOpenChat,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = null
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = stringResource(R.string.chat_now),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onHide,
+                            modifier = Modifier.weight(1f)
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text("Delete")
+                        }
                     }
                 }
                 MatchStatus.REJECTED -> {
