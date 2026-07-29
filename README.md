@@ -1,19 +1,19 @@
-# Lost & Found App 📱🔍
+# Lost & Found App 
 
 An Android application built to help users report and find lost items easily within their community.
 
-## 🚀 Features
+##  Features
 * User authentication (Login/Sign up)
 * Post lost or found items with descriptions and images
 * Real-time database integration with Firebase
 * Clean and intuitive user interface
 
-## 🛠️ Tech Stack
+##  Tech Stack
 * **Language:** Kotlin / Java
 * **UI:** XML / Android Views
 * **Backend/Database:** Firebase Firestore, Firebase Authentication, Firebase Storage
 
-## ⚙️ Setup & Installation
+## Setup & Installation
 
 To run this project locally, follow these steps:
 
