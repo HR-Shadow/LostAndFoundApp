@@ -1,10 +1,13 @@
 package eu.tutorials.lostfoundapp.ui.matches
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,12 +33,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.tutorials.lostfoundapp.R
 import eu.tutorials.lostfoundapp.model.MatchStatus
+import eu.tutorials.lostfoundapp.ui.components.Lottie3DBackground
 import eu.tutorials.lostfoundapp.viewmodel.MatchesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,89 +65,124 @@ fun MatchesScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.possible_matches)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+    // Outer Box: 3D Lottie Background Setup
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 1. Dynamic 3D Lottie Background
+        Lottie3DBackground()
+
+        // 2. Dark Overlay Fade (Taaki match cards aur text saaf dikhein)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+        )
+
+        // 3. Screen Main Content
+        Scaffold(
+            containerColor = Color.Transparent, // Transparent background taaki peeche ki 3D animation dikhe
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.possible_matches),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                                tint = Color.White
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { padding ->
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(44.dp),
+                            strokeWidth = 3.dp,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
-                }
-            }
-            state.matches.isEmpty() -> {
-                EmptyMatchesState(modifier = Modifier.padding(padding))
-            }
-            else -> {
-                val pendingMatches = state.matches.filter {
-                    it.match.status == MatchStatus.PENDING.value
-                }
-                val otherMatches = state.matches.filter {
-                    it.match.status != MatchStatus.PENDING.value
+
+                state.matches.isEmpty() -> {
+                    EmptyMatchesState(modifier = Modifier.padding(padding))
                 }
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (pendingMatches.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.pending_matches_header),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        items(pendingMatches, key = { it.match.matchId }) { match ->
-                            MatchCard(
-                                matchDetails = match,
-                                isActionInProgress = state.actionInProgress == match.match.matchId,
-                                onConfirm = { viewModel.confirmMatch(match.match.matchId) },
-                                onReject = { viewModel.rejectMatch(match.match.matchId) }
-                            )
-                        }
+                else -> {
+                    val pendingMatches = state.matches.filter {
+                        it.match.status == MatchStatus.PENDING.value
                     }
-                    if (otherMatches.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.past_matches_header),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    val otherMatches = state.matches.filter {
+                        it.match.status != MatchStatus.PENDING.value
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (pendingMatches.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.pending_matches_header),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            items(pendingMatches, key = { it.match.matchId }) { match ->
+                                MatchCard(
+                                    matchDetails = match,
+                                    isActionInProgress = state.actionInProgress == match.match.matchId,
+                                    onConfirm = { viewModel.confirmMatch(match.match.matchId) },
+                                    onReject = { viewModel.rejectMatch(match.match.matchId) }
+                                )
+                            }
                         }
-                        items(otherMatches, key = { it.match.matchId }) { match ->
-                            MatchCard(
-                                matchDetails = match,
-                                isActionInProgress = state.actionInProgress == match.match.matchId,
-                                onConfirm = {},
-                                onReject = {},
-                                onOpenChat = {
-                                    onNavigateToChat(match.match.matchId)
-                                },
-                                onHide = {
-                                    viewModel.hideMatch(match.match.matchId)
-                                }
-                            )
+
+                        if (otherMatches.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.past_matches_header),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            }
+                            items(otherMatches, key = { it.match.matchId }) { match ->
+                                MatchCard(
+                                    matchDetails = match,
+                                    isActionInProgress = state.actionInProgress == match.match.matchId,
+                                    onConfirm = {},
+                                    onReject = {},
+                                    onOpenChat = {
+                                        onNavigateToChat(match.match.matchId)
+                                    },
+                                    onHide = {
+                                        viewModel.hideMatch(match.match.matchId)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -162,18 +204,20 @@ private fun EmptyMatchesState(modifier: Modifier = Modifier) {
             imageVector = Icons.Default.SearchOff,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = Color.White.copy(alpha = 0.6f)
         )
         Text(
             text = stringResource(R.string.no_matches_yet),
             style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp)
         )
         Text(
             text = stringResource(R.string.no_matches_hint),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp)
         )

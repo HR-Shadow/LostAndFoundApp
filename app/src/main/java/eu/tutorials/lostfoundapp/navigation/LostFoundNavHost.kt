@@ -85,6 +85,7 @@ fun LostFoundNavHost(
                 }
                 composable(NavRoutes.NOTIFICATIONS) {
                     NotificationHubScreen(
+                        onNavigateBack = { mainNavController.popBackStack() },
                         onViewMatch = { matchId ->
                             mainNavController.navigate(NavRoutes.chatRoute(matchId))
                         }

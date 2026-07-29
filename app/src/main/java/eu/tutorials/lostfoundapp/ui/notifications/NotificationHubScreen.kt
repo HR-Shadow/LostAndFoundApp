@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,11 +26,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,15 +43,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import eu.tutorials.lostfoundapp.R
 import eu.tutorials.lostfoundapp.model.MatchWithDetails
 import eu.tutorials.lostfoundapp.viewmodel.NotificationViewModel
 
@@ -56,6 +65,7 @@ import eu.tutorials.lostfoundapp.viewmodel.NotificationViewModel
 @Composable
 fun NotificationHubScreen(
     viewModel: NotificationViewModel = viewModel(),
+    onNavigateBack: () -> Unit = {},
     onViewMatch: (matchId: String) -> Unit = {}
 ) {
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
@@ -66,6 +76,7 @@ fun NotificationHubScreen(
         notifications = notifications,
         isLoading = isLoading,
         errorMessage = errorMessage,
+        onNavigateBack = onNavigateBack,
         onViewMatch = onViewMatch
     )
 }
@@ -76,6 +87,7 @@ private fun NotificationHubContent(
     notifications: List<MatchWithDetails>,
     isLoading: Boolean,
     errorMessage: String?,
+    onNavigateBack: () -> Unit,
     onViewMatch: (String) -> Unit
 ) {
     Scaffold(
@@ -84,46 +96,74 @@ private fun NotificationHubContent(
                 title = {
                     Text(
                         text = "Activity & Matches",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = Color.White
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = Color(0xFF0F172A).copy(alpha = 0.85f)
                 )
             )
         }
     ) { padding ->
-        when {
-            isLoading -> {
-                NotificationShimmerList(modifier = Modifier.padding(padding))
-            }
-            errorMessage != null -> {
-                NotificationErrorState(
-                    errorMessage = errorMessage,
-                    modifier = Modifier.padding(padding)
-                )
-            }
-            notifications.isEmpty() -> {
-                NotificationEmptyState(modifier = Modifier.padding(padding))
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(
-                        items = notifications,
-                        key = { it.match.matchId }
-                    ) { matchDetails ->
-                        MatchNotificationCard(
-                            matchDetails = matchDetails,
-                            onViewMatch = { onViewMatch(matchDetails.match.matchId) }
-                        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // --- 1. BACKGROUND IMAGE RESOURCE ---
+            Image(
+                painter = painterResource(id = R.drawable.notification),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            // --- 2. DARK OVERLAY FOR CONTRAST ---
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0B0F19).copy(alpha = 0.78f))
+            )
+
+            // --- 3. MAIN CONTENT STATES ---
+            when {
+                isLoading -> {
+                    NotificationShimmerList()
+                }
+                errorMessage != null -> {
+                    NotificationErrorState(
+                        errorMessage = errorMessage
+                    )
+                }
+                notifications.isEmpty() -> {
+                    NotificationEmptyState()
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(
+                            items = notifications,
+                            key = { it.match.matchId }
+                        ) { matchDetails ->
+                            MatchNotificationCard(
+                                matchDetails = matchDetails,
+                                onViewMatch = { onViewMatch(matchDetails.match.matchId) }
+                            )
+                        }
                     }
                 }
             }
@@ -137,23 +177,33 @@ private fun MatchNotificationCard(
     onViewMatch: () -> Unit
 ) {
     val status = matchDetails.match.status
-    // Yahan .equals() use kiya hai taaki uppercase/lowercase ka koi chakkar na rahe
-    val isConfirmed = status.equals("CONFIRMED", ignoreCase = true) ||
-            status.equals("confirmed", ignoreCase = true)
+    val isConfirmed = status.equals("CONFIRMED", ignoreCase = true)
 
-    ElevatedCard(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color(0xFF6366F1).copy(alpha = 0.3f),
+                spotColor = Color(0xFF6366F1).copy(alpha = 0.3f)
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF1E293B).copy(alpha = 0.85f))
             .border(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
-                shape = RoundedCornerShape(16.dp)
-            ),
-        shape = RoundedCornerShape(16.dp)
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF6366F1).copy(alpha = 0.6f),
+                        Color(0xFF38BDF8).copy(alpha = 0.4f)
+                    )
+                ),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .padding(18.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -164,9 +214,32 @@ private fun MatchNotificationCard(
                     text = "Potential Item Match Found!",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.White,
                     modifier = Modifier.weight(1f)
                 )
+
+                // Status Pill Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(
+                            if (isConfirmed) Color(0xFF10B981).copy(alpha = 0.2f)
+                            else Color(0xFFF59E0B).copy(alpha = 0.2f)
+                        )
+                        .border(
+                            1.dp,
+                            if (isConfirmed) Color(0xFF10B981) else Color(0xFFF59E0B),
+                            RoundedCornerShape(50)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = status.uppercase(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isConfirmed) Color(0xFF34D399) else Color(0xFFFBBF24)
+                    )
+                }
             }
 
             OverlappingMatchImages(
@@ -174,30 +247,52 @@ private fun MatchNotificationCard(
                 matchedImageUrl = matchDetails.foundItem?.imageUrl
             )
 
-            Text(
-                text = "Status: $status",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             if (isConfirmed) {
                 Button(
                     onClick = onViewMatch,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    ),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("Open Chat")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF6366F1),
+                                        Color(0xFF38BDF8)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(14.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Open Chat",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 15.sp
+                        )
+                    }
                 }
             } else {
                 Text(
                     text = "⏳ Waiting for both users to confirm the match...",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = Color(0xFFCBD5E1),
                     fontWeight = FontWeight.Medium
                 )
             }
         }
     }
 }
+
 @Composable
 private fun OverlappingMatchImages(
     imageUrl: String?,
@@ -212,13 +307,14 @@ private fun OverlappingMatchImages(
         NotificationAvatar(
             imageUrl = imageUrl,
             size = 72.dp,
-            modifier = Modifier.offset(x = 0.dp)
+            modifier = Modifier.offset(x = 0.dp),
+            borderColor = Color(0xFF6366F1)
         )
         NotificationAvatar(
             imageUrl = matchedImageUrl,
             size = 72.dp,
             modifier = Modifier.offset(x = 52.dp),
-            borderColor = MaterialTheme.colorScheme.primary
+            borderColor = Color(0xFF38BDF8)
         )
     }
 }
@@ -228,14 +324,14 @@ private fun NotificationAvatar(
     imageUrl: String?,
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
-    borderColor: Color = MaterialTheme.colorScheme.surface
+    borderColor: Color = Color.Transparent
 ) {
     Box(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .border(3.dp, borderColor, CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .border(2.5.dp, borderColor, CircleShape)
+            .background(Color(0xFF0F172A)),
         contentAlignment = Alignment.Center
     ) {
         if (!imageUrl.isNullOrBlank()) {
@@ -247,6 +343,13 @@ private fun NotificationAvatar(
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.NotificationsNone,
+                contentDescription = null,
+                tint = Color(0xFF64748B),
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
@@ -256,8 +359,8 @@ private fun NotificationShimmerList(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         repeat(4) {
             ShimmerNotificationCard()
@@ -268,9 +371,9 @@ private fun NotificationShimmerList(modifier: Modifier = Modifier) {
 @Composable
 private fun ShimmerNotificationCard() {
     val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        Color(0xFF1E293B).copy(alpha = 0.6f),
+        Color(0xFF334155).copy(alpha = 0.4f),
+        Color(0xFF1E293B).copy(alpha = 0.6f)
     )
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
@@ -288,13 +391,15 @@ private fun ShimmerNotificationCard() {
         end = Offset(translateAnim, 300f)
     )
 
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF1E293B).copy(alpha = 0.6f))
+            .padding(18.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -337,23 +442,33 @@ private fun NotificationEmptyState(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Outlined.NotificationsNone,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        )
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF1E293B).copy(alpha = 0.8f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.NotificationsNone,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = Color(0xFF38BDF8)
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "All caught up!",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "New match activity will appear here in real time.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color(0xFF94A3B8),
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -374,20 +489,21 @@ private fun NotificationErrorState(
             imageVector = Icons.Outlined.NotificationsNone,
             contentDescription = null,
             modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+            tint = Color(0xFFEF4444)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Error Loading Notifications",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFEF4444)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = errorMessage,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color(0xFFCBD5E1),
+            textAlign = TextAlign.Center
         )
     }
 }

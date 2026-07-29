@@ -13,14 +13,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome // Gemini Sparkle Icon
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Report
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,17 +36,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import eu.tutorials.lostfoundapp.R
+import androidx.compose.ui.unit.sp
 import eu.tutorials.lostfoundapp.model.User
+import eu.tutorials.lostfoundapp.ui.components.Lottie3DBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,28 +64,73 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        stringResource(R.string.home),
+                        text = "Home",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 },
                 actions = {
-                    IconButton(onClick = onViewNotifications) {
-                        Icon(
-                            imageVector = Icons.Outlined.NotificationsNone,
-                            contentDescription = "Notifications",
-                            tint = Color.White,
-                            modifier = Modifier.size(26.dp)
+                    // --- 1. HIGHLIGHTED NOTIFICATION BUTTON ---
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.12f))
+                    ) {
+                        IconButton(
+                            onClick = onViewNotifications,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Notifications",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        // Notification Alert Badge (Red Indicator Dot)
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .align(Alignment.TopEnd)
+                                .padding(top = 4.dp, end = 4.dp)
+                                .background(Color(0xFFFF5252), CircleShape)
                         )
                     }
-                    IconButton(onClick = onOpenAiAssistant) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "AI Assistant",
-                            tint = Color.White,
-                            modifier = Modifier.size(26.dp)
-                        )
+
+                    // --- 2. HIGHLIGHTED GEMINI AI BUTTON ---
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .shadow(
+                                elevation = 6.dp,
+                                shape = RoundedCornerShape(14.dp),
+                                ambientColor = Color(0xFF38BDF8).copy(alpha = 0.6f),
+                                spotColor = Color(0xFF38BDF8).copy(alpha = 0.6f)
+                            )
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF6366F1), // Indigo
+                                        Color(0xFF38BDF8)  // Neon Cyan
+                                    )
+                                ),
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                    ) {
+                        IconButton(
+                            onClick = onOpenAiAssistant,
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "AI Assistant",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 },
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
@@ -96,106 +142,110 @@ fun HomeScreen(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Background image
-            Image(
-                painter = painterResource(id = R.drawable.globe),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            // 3D Lottie Animation Background
+            Lottie3DBackground()
 
-            // Semi-transparent dark overlay
+            // Dark Overlay for Contrast
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Color.Black.copy(alpha = 0.45f))
             )
 
-            // Content column
+            // Content Column
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(24.dp),
+                    .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Search icon with glowing background
+
+                // --- CENTER AI WATERMARK GLOW ---
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(86.dp)
                         .background(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFF6B4CE6).copy(alpha = 0.3f),
+                                    Color(0xFF38BDF8).copy(alpha = 0.35f),
+                                    Color(0xFF6366F1).copy(alpha = 0.15f),
                                     Color.Transparent
                                 )
                             ),
-                            shape = RoundedCornerShape(40.dp)
+                            shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color(0xFFB8A5FF)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .background(Color.White.copy(alpha = 0.08f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = Color(0xFFBAE6FD)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
 
-                // Welcome text
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // --- WELCOME HEADING (Gradient Text Effect) ---
+                val userName = user?.name?.ifBlank { "harsh" } ?: "harsh"
                 Text(
-                    text = stringResource(R.string.welcome_user, user?.name?.ifBlank { "User" } ?: "User"),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(0.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.5f),
-                        spotColor = Color.Black.copy(alpha = 0.5f)
-                    )
+                    text = "Welcome, $userName!",
+                    style = TextStyle(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFFFFFFF),
+                                Color(0xFFE0F2FE)
+                            )
+                        ),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    ),
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(12.dp))
 
-                // Subtitle text
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // --- SUBTITLE TEXT (High Contrast Professional Typography) ---
                 Text(
-                    text = stringResource(R.string.home_step3_placeholder),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
+                    text = "Report items and check possible matches to\nreunite owners with finders.",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color(0xFFCBD5E1), // Professional Soft Slate
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.shadow(
-                        elevation = 6.dp,
-                        shape = RoundedCornerShape(0.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.5f),
-                        spotColor = Color.Black.copy(alpha = 0.5f)
-                    )
+                    lineHeight = 22.sp,
+                    letterSpacing = 0.2.sp
                 )
-                Spacer(modifier = Modifier.height(40.dp))
 
-                // Report Lost Item button - Glass card with gradient
+                Spacer(modifier = Modifier.height(36.dp))
+
+                // --- REPORT LOST ITEM BUTTON ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .height(60.dp)
                         .shadow(
                             elevation = 8.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.3f),
-                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.3f)
+                            shape = RoundedCornerShape(18.dp),
+                            ambientColor = Color(0xFF6366F1).copy(alpha = 0.4f),
+                            spotColor = Color(0xFF6366F1).copy(alpha = 0.4f)
                         )
                 ) {
                     Button(
                         onClick = onReportLost,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -203,11 +253,11 @@ fun HomeScreen(
                                 .background(
                                     brush = Brush.horizontalGradient(
                                         colors = listOf(
-                                            Color(0xFF6B4CE6).copy(alpha = 0.4f),
-                                            Color(0xFF4A7BD6).copy(alpha = 0.4f)
+                                            Color(0xFF6366F1).copy(alpha = 0.55f),
+                                            Color(0xFF4F46E5).copy(alpha = 0.45f)
                                         )
                                     ),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(18.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -215,31 +265,16 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color(0xFF6B4CE6).copy(alpha = 0.6f),
-                                                    Color.Transparent
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(20.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Report,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.Report,
+                                    contentDescription = null,
+                                    tint = Color(0xFFE0E7FF),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = stringResource(R.string.report_lost),
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    text = "Report Lost Item",
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
@@ -247,29 +282,27 @@ fun HomeScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // Report Found Item button - Glass card with different accent
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // --- REPORT FOUND ITEM BUTTON ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .height(60.dp)
                         .shadow(
                             elevation = 8.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color(0xFF4A7BD6).copy(alpha = 0.3f),
-                            spotColor = Color(0xFF4A7BD6).copy(alpha = 0.3f)
+                            shape = RoundedCornerShape(18.dp),
+                            ambientColor = Color(0xFF0284C7).copy(alpha = 0.4f),
+                            spotColor = Color(0xFF0284C7).copy(alpha = 0.4f)
                         )
                 ) {
                     Button(
                         onClick = onReportFound,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -277,11 +310,11 @@ fun HomeScreen(
                                 .background(
                                     brush = Brush.horizontalGradient(
                                         colors = listOf(
-                                            Color(0xFF4A7BD6).copy(alpha = 0.4f),
-                                            Color(0xFF6B4CE6).copy(alpha = 0.4f)
+                                            Color(0xFF0284C7).copy(alpha = 0.55f),
+                                            Color(0xFF6366F1).copy(alpha = 0.45f)
                                         )
                                     ),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(18.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -289,31 +322,16 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color(0xFF4A7BD6).copy(alpha = 0.6f),
-                                                    Color.Transparent
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(20.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFFE0F2FE),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = stringResource(R.string.report_found),
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    text = "Report Found Item",
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
@@ -321,36 +339,36 @@ fun HomeScreen(
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Possible Matches button - Circular, centered, medium size
+                // --- CIRCULAR MATCHES BUTTON ---
                 Box(
                     modifier = Modifier
-                        .size(110.dp)
+                        .size(105.dp)
                         .shadow(
-                            elevation = 10.dp,
+                            elevation = 12.dp,
                             shape = CircleShape,
-                            ambientColor = Color(0xFF6B4CE6).copy(alpha = 0.4f),
-                            spotColor = Color(0xFF6B4CE6).copy(alpha = 0.4f)
+                            ambientColor = Color(0xFF38BDF8).copy(alpha = 0.4f),
+                            spotColor = Color(0xFF38BDF8).copy(alpha = 0.4f)
                         )
                 ) {
                     OutlinedButton(
                         onClick = onViewMatches,
                         modifier = Modifier.fillMaxSize(),
                         shape = CircleShape,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                         border = BorderStroke(
                             width = 1.5.dp,
-                            brush = Brush.horizontalGradient(
+                            brush = Brush.sweepGradient(
                                 colors = listOf(
-                                    Color(0xFF6B4CE6).copy(alpha = 0.6f),
-                                    Color(0xFF4A7BD6).copy(alpha = 0.6f)
+                                    Color(0xFF38BDF8),
+                                    Color(0xFF818CF8),
+                                    Color(0xFF38BDF8)
                                 )
                             )
                         ),
-                        contentPadding = PaddingValues(4.dp)
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -358,8 +376,8 @@ fun HomeScreen(
                                 .background(
                                     brush = Brush.radialGradient(
                                         colors = listOf(
-                                            Color(0xFF6B4CE6).copy(alpha = 0.2f),
-                                            Color(0xFF4A7BD6).copy(alpha = 0.15f)
+                                            Color(0xFF6366F1).copy(alpha = 0.4f),
+                                            Color(0xFF0F172A).copy(alpha = 0.6f)
                                         )
                                     ),
                                     shape = CircleShape
@@ -373,13 +391,13 @@ fun HomeScreen(
                                 Icon(
                                     imageVector = Icons.Default.CompareArrows,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = Color(0xFF38BDF8),
                                     modifier = Modifier.size(26.dp)
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = stringResource(R.string.possible_matches),
-                                    style = MaterialTheme.typography.labelMedium,
+                                    text = "Possible\nMatches",
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                     textAlign = TextAlign.Center
@@ -388,28 +406,24 @@ fun HomeScreen(
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Sign Out button - Subtle, small
+                // --- SIGN OUT BUTTON ---
                 OutlinedButton(
                     onClick = onSignOut,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(50),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFB8A5FF).copy(alpha = 0.6f)
+                        contentColor = Color(0xFF94A3B8)
                     ),
-                    modifier = Modifier
-                        .shadow(
-                            elevation = 4.dp,
-                            shape = RoundedCornerShape(16.dp),
-                            ambientColor = Color(0xFFB8A5FF).copy(alpha = 0.1f),
-                            spotColor = Color(0xFFB8A5FF).copy(alpha = 0.1f)
-                        )
+                    modifier = Modifier.height(38.dp)
                 ) {
                     Text(
-                        stringResource(R.string.sign_out),
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Sign Out",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFFB8A5FF).copy(alpha = 0.6f)
+                        color = Color(0xFFCBD5E1)
                     )
                 }
             }

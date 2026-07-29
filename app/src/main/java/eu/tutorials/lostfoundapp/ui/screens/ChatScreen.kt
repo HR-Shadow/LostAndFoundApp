@@ -1,21 +1,29 @@
 package eu.tutorials.lostfoundapp.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -25,11 +33,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,8 +50,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import eu.tutorials.lostfoundapp.R
@@ -81,15 +99,34 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(Color(0xFF10B981), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Match Support Chat",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            contentDescription = stringResource(R.string.back),
+                            tint = Color.White
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0F172A).copy(alpha = 0.85f)
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -113,21 +150,47 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // --- 1. GLOBE BACKGROUND IMAGE ---
+            Image(
+                painter = painterResource(id = R.drawable.globe),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            // --- 2. DARK OVERLAY FOR BETTER CONTRAST ---
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0B0F19).copy(alpha = 0.72f))
+            )
+
+            // --- 3. MESSAGES CONTENT ---
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier
                             .size(40.dp)
-                            .align(Alignment.Center)
+                            .align(Alignment.Center),
+                        color = Color(0xFF38BDF8)
                     )
                 }
                 uiState.messages.isEmpty() -> {
-                    Text(
-                        text = "No messages yet. Say hello!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .background(
+                                Color.Black.copy(alpha = 0.4f),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "No messages yet. Say hello 👋",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFFE2E8F0)
+                        )
+                    }
                 }
                 else -> {
                     LazyColumn(
@@ -135,7 +198,7 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(
                             items = uiState.messages,
@@ -158,21 +221,11 @@ private fun MessageBubble(
     message: ChatMessage,
     isFromCurrentUser: Boolean
 ) {
-    val bubbleColor = if (isFromCurrentUser) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val textColor = if (isFromCurrentUser) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val shape = RoundedCornerShape(
-        topStart = 16.dp,
-        topEnd = 16.dp,
-        bottomStart = if (isFromCurrentUser) 16.dp else 4.dp,
-        bottomEnd = if (isFromCurrentUser) 4.dp else 16.dp
+    val bubbleShape = RoundedCornerShape(
+        topStart = 18.dp,
+        topEnd = 18.dp,
+        bottomStart = if (isFromCurrentUser) 18.dp else 4.dp,
+        bottomEnd = if (isFromCurrentUser) 4.dp else 18.dp
     )
 
     Row(
@@ -185,21 +238,47 @@ private fun MessageBubble(
         ) {
             Box(
                 modifier = Modifier
-                    .clip(shape)
-                    .background(bubbleColor)
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = bubbleShape,
+                        ambientColor = Color.Black.copy(alpha = 0.3f)
+                    )
+                    .clip(bubbleShape)
+                    .then(
+                        if (isFromCurrentUser) {
+                            Modifier.background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF6366F1),
+                                        Color(0xFF38BDF8)
+                                    )
+                                )
+                            )
+                        } else {
+                            Modifier
+                                .background(Color(0xFF1E293B).copy(alpha = 0.9f))
+                                .border(
+                                    width = 1.dp,
+                                    color = Color.White.copy(alpha = 0.12f),
+                                    shape = bubbleShape
+                                )
+                        }
+                    )
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = textColor
+                    fontSize = 15.sp,
+                    color = Color.White
                 )
             }
             if (message.timestamp != null) {
                 Text(
                     text = formatMessageTimestamp(message.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    color = Color(0xFF94A3B8),
                     modifier = Modifier.padding(top = 4.dp, start = 4.dp, end = 4.dp)
                 )
             }
@@ -215,34 +294,91 @@ private fun ChatInputBar(
     isSending: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .background(Color(0xFF0F172A).copy(alpha = 0.95f))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("Type a message…") },
-            maxLines = 4,
-            enabled = !isSending
-        )
-        IconButton(
-            onClick = onSend,
-            enabled = value.isNotBlank() && !isSending
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isSending) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send message",
-                    tint = MaterialTheme.colorScheme.primary
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(
+                        text = "Type a message…",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 14.sp
+                    )
+                },
+                maxLines = 4,
+                enabled = !isSending,
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFF1E293B),
+                    unfocusedContainerColor = Color(0xFF1E293B),
+                    disabledContainerColor = Color(0xFF1E293B).copy(alpha = 0.5f),
+                    focusedBorderColor = Color(0xFF38BDF8),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(
+                    onSend = {
+                        if (value.isNotBlank() && !isSending) {
+                            onSend()
+                        }
+                    }
                 )
+            )
+
+            // Highlighted Floating Send Button
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (value.isNotBlank() && !isSending) {
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF6366F1), Color(0xFF38BDF8))
+                            )
+                        } else {
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF334155),
+                                    Color(0xFF334155)
+                                )
+                            )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = onSend,
+                    enabled = value.isNotBlank() && !isSending,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (isSending) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send message",
+                            tint = if (value.isNotBlank()) Color.White else Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
     }
