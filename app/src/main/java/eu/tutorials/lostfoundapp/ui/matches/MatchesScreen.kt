@@ -1,19 +1,24 @@
 package eu.tutorials.lostfoundapp.ui.matches
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,18 +35,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.tutorials.lostfoundapp.R
 import eu.tutorials.lostfoundapp.model.MatchStatus
 import eu.tutorials.lostfoundapp.ui.components.Lottie3DBackground
+import eu.tutorials.lostfoundapp.util.rememberBase64ImageBitmap
 import eu.tutorials.lostfoundapp.viewmodel.MatchesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +64,9 @@ fun MatchesScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // State for full-screen image zoom modal
+    var selectedImageBase64 by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.errorMessage, state.successMessage) {
         state.errorMessage?.let {
@@ -70,7 +84,7 @@ fun MatchesScreen(
         // 1. Dynamic 3D Lottie Background
         Lottie3DBackground()
 
-        // 2. Dark Overlay Fade (Taaki match cards aur text saaf dikhein)
+        // 2. Dark Overlay Fade
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -79,7 +93,7 @@ fun MatchesScreen(
 
         // 3. Screen Main Content
         Scaffold(
-            containerColor = Color.Transparent, // Transparent background taaki peeche ki 3D animation dikhe
+            containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
                     title = {
@@ -105,6 +119,11 @@ fun MatchesScreen(
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
+            // Filter out REJECTED matches entirely so they vanish immediately
+            val activeMatches = remember(state.matches) {
+                state.matches.filter { it.match.status != MatchStatus.REJECTED.value }
+            }
+
             when {
                 state.isLoading -> {
                     Box(
@@ -121,15 +140,15 @@ fun MatchesScreen(
                     }
                 }
 
-                state.matches.isEmpty() -> {
+                activeMatches.isEmpty() -> {
                     EmptyMatchesState(modifier = Modifier.padding(padding))
                 }
 
                 else -> {
-                    val pendingMatches = state.matches.filter {
+                    val pendingMatches = activeMatches.filter {
                         it.match.status == MatchStatus.PENDING.value
                     }
-                    val otherMatches = state.matches.filter {
+                    val otherMatches = activeMatches.filter {
                         it.match.status != MatchStatus.PENDING.value
                     }
 
@@ -154,7 +173,10 @@ fun MatchesScreen(
                                     matchDetails = match,
                                     isActionInProgress = state.actionInProgress == match.match.matchId,
                                     onConfirm = { viewModel.confirmMatch(match.match.matchId) },
-                                    onReject = { viewModel.rejectMatch(match.match.matchId) }
+                                    onReject = { viewModel.rejectMatch(match.match.matchId) },
+                                    onImageClick = { base64 ->
+                                        selectedImageBase64 = base64
+                                    }
                                 )
                             }
                         }
@@ -180,6 +202,9 @@ fun MatchesScreen(
                                     },
                                     onHide = {
                                         viewModel.hideMatch(match.match.matchId)
+                                    },
+                                    onImageClick = { base64 ->
+                                        selectedImageBase64 = base64
                                     }
                                 )
                             }
@@ -187,6 +212,14 @@ fun MatchesScreen(
                     }
                 }
             }
+        }
+
+        // Full Screen Image Zoom Dialog
+        selectedImageBase64?.let { base64Image ->
+            FullScreenImageModal(
+                imageBase64 = base64Image,
+                onDismiss = { selectedImageBase64 = null }
+            )
         }
     }
 }
@@ -221,5 +254,55 @@ private fun EmptyMatchesState(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp)
         )
+    }
+}
+
+/**
+ * Dialog component to display a high-resolution enlarged image on click
+ */
+@Composable
+fun FullScreenImageModal(
+    imageBase64: String,
+    onDismiss: () -> Unit
+) {
+    val imageBitmap = rememberBase64ImageBitmap(imageBase64)
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (imageBitmap != null) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = "Full Screen Matched Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.82f)
+                        .padding(16.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            // Top Right Close Button
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 40.dp, end = 20.dp)
+                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(50))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color.White
+                )
+            }
+        }
     }
 }

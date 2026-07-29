@@ -88,7 +88,24 @@ class MatchesViewModel(
 
     fun rejectMatch(matchId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(actionInProgress = matchId, errorMessage = null) }
+            // Optimistically update the UI by marking the item REJECTED locally so it vanishes instantly
+            _uiState.update { currentState ->
+                val updatedMatches = currentState.matches.map { details ->
+                    if (details.match.matchId == matchId) {
+                        details.copy(match = details.match.copy(status = MatchStatus.REJECTED.value))
+                    } else {
+                        details
+                    }
+                }
+                val pending = updatedMatches.count { it.match.status == MatchStatus.PENDING.value }
+                currentState.copy(
+                    matches = updatedMatches,
+                    pendingCount = pending,
+                    actionInProgress = matchId,
+                    errorMessage = null
+                )
+            }
+
             matchRepository.rejectMatch(matchId)
                 .onSuccess {
                     _uiState.update {
@@ -108,9 +125,9 @@ class MatchesViewModel(
                 }
         }
     }
+
     fun hideMatch(matchId: String) {
         viewModelScope.launch {
-
             _uiState.update {
                 it.copy(
                     actionInProgress = matchId,
@@ -120,17 +137,14 @@ class MatchesViewModel(
 
             matchRepository.hideMatchForCurrentUser(matchId)
                 .onSuccess {
-
                     _uiState.update {
                         it.copy(
                             actionInProgress = null,
                             successMessage = "Match removed from your list."
                         )
                     }
-
                 }
                 .onFailure { error ->
-
                     _uiState.update {
                         it.copy(
                             actionInProgress = null,
@@ -138,10 +152,10 @@ class MatchesViewModel(
                                 ?: "Failed to remove match"
                         )
                     }
-
                 }
         }
     }
+
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }

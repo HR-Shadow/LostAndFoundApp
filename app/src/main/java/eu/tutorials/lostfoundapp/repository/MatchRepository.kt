@@ -1,9 +1,9 @@
 package eu.tutorials.lostfoundapp.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.FieldValue
 import eu.tutorials.lostfoundapp.model.FoundItem
 import eu.tutorials.lostfoundapp.model.ItemStatus
 import eu.tutorials.lostfoundapp.model.LostItem
@@ -15,7 +15,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import kotlin.text.get
 
 class MatchRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -25,6 +24,7 @@ class MatchRepository(
         private const val LOST_ITEMS = "lost_items"
         private const val FOUND_ITEMS = "found_items"
         private const val MATCH_REQUESTS = "match_requests"
+        private const val USERS = "users"
     }
 
     private val currentUserId: String
@@ -32,7 +32,6 @@ class MatchRepository(
             ?: throw IllegalStateException("User must be signed in")
 
     suspend fun runMatchingForLostItem(lostItem: LostItem): Result<Int> = runCatching {
-
         val candidates = firestore.collection(FOUND_ITEMS)
             .whereEqualTo("category", lostItem.category)
             .whereEqualTo("status", ItemStatus.REPORTED.value.uppercase())
@@ -53,7 +52,6 @@ class MatchRepository(
     }
 
     suspend fun runMatchingForFoundItem(foundItem: FoundItem): Result<Int> = runCatching {
-        // FIXED: .uppercase() lagaya matching logic uniform rakhne ke liye
         val candidates = firestore.collection(LOST_ITEMS)
             .whereEqualTo("category", foundItem.category)
             .whereEqualTo("status", ItemStatus.SEARCHING.value.uppercase())
@@ -107,14 +105,11 @@ class MatchRepository(
         return true
     }
 
-    // FIXED: Fake bypass hataya, ab yeh real match_requests database se real-time entries trigger karega
     fun observeUserMatches(): Flow<List<MatchRequest>> = callbackFlow {
-
         val listener = firestore.collection(MATCH_REQUESTS)
             .whereArrayContains("participants", currentUserId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
@@ -125,7 +120,7 @@ class MatchRepository(
                         doc.data?.let { MatchRequest.fromMap(it) }
                     }
                     ?.filter {
-                        !it.hiddenFor.contains(currentUserId)
+                        !it.hiddenFor.contains(currentUserId) && it.status != MatchStatus.REJECTED.value
                     }
                     ?: emptyList()
 
@@ -141,11 +136,18 @@ class MatchRepository(
         return matches.map { match ->
             val lostItem = getLostItem(match.lostItemId)
             val foundItem = getFoundItem(match.foundItemId)
+            val isLostOwner = match.lostUserId == currentUserId
+
+            val otherUserId = if (isLostOwner) match.foundUserId else match.lostUserId
+            val (userName, userPhone) = getUserDetails(otherUserId)
+
             MatchWithDetails(
                 match = match,
                 lostItem = lostItem,
                 foundItem = foundItem,
-                isLostOwner = match.lostUserId == currentUserId
+                isLostOwner = isLostOwner,
+                otherUserName = userName,
+                otherUserPhoneNumber = userPhone
             )
         }
     }
@@ -201,7 +203,12 @@ class MatchRepository(
             "Match is no longer pending"
         }
 
-        docRef.update("status", MatchStatus.REJECTED.value).await()
+        // Updates status to REJECTED and auto-hides for current user simultaneously
+        val updates = mapOf<String, Any>(
+            "status" to MatchStatus.REJECTED.value,
+            "hiddenFor" to FieldValue.arrayUnion(currentUserId)
+        )
+        docRef.update(updates).await()
     }
 
     private suspend fun getLostItem(itemId: String): LostItem? {
@@ -216,26 +223,39 @@ class MatchRepository(
         return snapshot.data?.let { FoundItem.fromMap(it) }
     }
 
+    private suspend fun getUserDetails(userId: String): Pair<String, String> {
+        if (userId.isBlank()) return Pair("User", "")
+        return try {
+            val snapshot = firestore.collection(USERS).document(userId).get().await()
+            val data = snapshot.data
+            val name = data?.get("name") as? String
+                ?: data?.get("userName") as? String
+                ?: "User"
+            val phone = data?.get("phoneNumber") as? String
+                ?: data?.get("phone") as? String
+                ?: ""
+            Pair(name, phone)
+        } catch (e: Exception) {
+            Pair("User", "")
+        }
+    }
+
     private suspend fun updateItemStatus(itemId: String, isLost: Boolean, status: String) {
         val collection = if (isLost) LOST_ITEMS else FOUND_ITEMS
         firestore.collection(collection).document(itemId)
             .update("status", status)
             .await()
     }
+
     suspend fun hideMatchForCurrentUser(matchId: String): Result<Unit> = runCatching {
-
         val docRef = firestore.collection(MATCH_REQUESTS).document(matchId)
-
         val snapshot = docRef.get().await()
-
         val match = MatchRequest.fromMap(
-            snapshot.data
-                ?: throw IllegalStateException("Match not found")
+            snapshot.data ?: throw IllegalStateException("Match not found")
         )
 
         require(
-            match.lostUserId == currentUserId ||
-                    match.foundUserId == currentUserId
+            match.lostUserId == currentUserId || match.foundUserId == currentUserId
         ) {
             "Not authorized"
         }

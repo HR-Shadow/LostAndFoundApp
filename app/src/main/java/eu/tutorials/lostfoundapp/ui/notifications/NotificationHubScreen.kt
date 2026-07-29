@@ -18,15 +18,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +37,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -56,7 +60,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import eu.tutorials.lostfoundapp.R
 import eu.tutorials.lostfoundapp.model.MatchWithDetails
 import eu.tutorials.lostfoundapp.viewmodel.NotificationViewModel
@@ -77,7 +80,13 @@ fun NotificationHubScreen(
         isLoading = isLoading,
         errorMessage = errorMessage,
         onNavigateBack = onNavigateBack,
-        onViewMatch = onViewMatch
+        onViewMatch = onViewMatch,
+        onConfirmMatch = { matchId ->
+            viewModel.confirmMatchRequest(matchId)
+        },
+        onHideMatch = { matchId ->
+            viewModel.hideMatch(matchId)
+        }
     )
 }
 
@@ -88,7 +97,9 @@ private fun NotificationHubContent(
     isLoading: Boolean,
     errorMessage: String?,
     onNavigateBack: () -> Unit,
-    onViewMatch: (String) -> Unit
+    onViewMatch: (String) -> Unit,
+    onConfirmMatch: (String) -> Unit,
+    onHideMatch: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -121,7 +132,6 @@ private fun NotificationHubContent(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // --- 1. BACKGROUND IMAGE RESOURCE ---
             Image(
                 painter = painterResource(id = R.drawable.notification),
                 contentDescription = null,
@@ -129,14 +139,12 @@ private fun NotificationHubContent(
                 contentScale = ContentScale.Crop
             )
 
-            // --- 2. DARK OVERLAY FOR CONTRAST ---
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF0B0F19).copy(alpha = 0.78f))
             )
 
-            // --- 3. MAIN CONTENT STATES ---
             when {
                 isLoading -> {
                     NotificationShimmerList()
@@ -161,7 +169,9 @@ private fun NotificationHubContent(
                         ) { matchDetails ->
                             MatchNotificationCard(
                                 matchDetails = matchDetails,
-                                onViewMatch = { onViewMatch(matchDetails.match.matchId) }
+                                onViewMatch = { onViewMatch(matchDetails.match.matchId) },
+                                onConfirmMatch = { onConfirmMatch(matchDetails.match.matchId) },
+                                onDeleteMatch = { onHideMatch(matchDetails.match.matchId) }
                             )
                         }
                     }
@@ -174,10 +184,21 @@ private fun NotificationHubContent(
 @Composable
 private fun MatchNotificationCard(
     matchDetails: MatchWithDetails,
-    onViewMatch: () -> Unit
+    onViewMatch: () -> Unit,
+    onConfirmMatch: () -> Unit,
+    onDeleteMatch: () -> Unit
 ) {
     val status = matchDetails.match.status
     val isConfirmed = status.equals("CONFIRMED", ignoreCase = true)
+
+    val userAlreadyConfirmed = if (matchDetails.isLostOwner) {
+        matchDetails.match.lostUserConfirmed
+    } else {
+        matchDetails.match.foundUserConfirmed
+    }
+
+    // Red dot condition: Action required from current user
+    val needsUserAction = !isConfirmed && !userAlreadyConfirmed
 
     Box(
         modifier = Modifier
@@ -191,165 +212,227 @@ private fun MatchNotificationCard(
             .clip(RoundedCornerShape(20.dp))
             .background(Color(0xFF1E293B).copy(alpha = 0.85f))
             .border(
-                width = 1.dp,
+                width = if (needsUserAction) 1.5.dp else 1.dp,
                 brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFF6366F1).copy(alpha = 0.6f),
-                        Color(0xFF38BDF8).copy(alpha = 0.4f)
-                    )
+                    colors = if (needsUserAction) {
+                        listOf(Color(0xFFEF4444), Color(0xFFF59E0B))
+                    } else {
+                        listOf(Color(0xFF6366F1).copy(alpha = 0.6f), Color(0xFF38BDF8).copy(alpha = 0.4f))
+                    }
                 ),
                 shape = RoundedCornerShape(20.dp)
             )
+            // NO .clickable HERE ON PURPOSE (Prevents accidental chat openings)
             .padding(18.dp)
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Header Row: Avatar + Name + Status & Red Indicator Dot
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Potential Item Match Found!",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
-                )
-
-                // Status Pill Badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(
-                            if (isConfirmed) Color(0xFF10B981).copy(alpha = 0.2f)
-                            else Color(0xFFF59E0B).copy(alpha = 0.2f)
-                        )
-                        .border(
-                            1.dp,
-                            if (isConfirmed) Color(0xFF10B981) else Color(0xFFF59E0B),
-                            RoundedCornerShape(50)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(
-                        text = status.uppercase(),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isConfirmed) Color(0xFF34D399) else Color(0xFFFBBF24)
-                    )
-                }
-            }
-
-            OverlappingMatchImages(
-                imageUrl = matchDetails.lostItem?.imageUrl,
-                matchedImageUrl = matchDetails.foundItem?.imageUrl
-            )
-
-            if (isConfirmed) {
-                Button(
-                    onClick = onViewMatch,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
+                    // Profile Avatar Block (Non-clickable)
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color(0xFF6366F1),
-                                        Color(0xFF38BDF8)
-                                    )
-                                ),
-                                shape = RoundedCornerShape(14.dp)
-                            ),
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF312E81))
+                            .border(1.5.dp, Color(0xFF818CF8), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "User Avatar",
+                            tint = Color(0xFFC7D2FE),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
                         Text(
-                            text = "Open Chat",
+                            text = matchDetails.otherUserName.ifBlank { "User Request" },
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 15.sp
+                            color = Color.White
+                        )
+                        Text(
+                            text = if (matchDetails.isLostOwner) "Match request for lost item" else "Match request for found item",
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8)
                         )
                     }
                 }
-            } else {
-                Text(
-                    text = "⏳ Waiting for both users to confirm the match...",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFCBD5E1),
-                    fontWeight = FontWeight.Medium
-                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Status Pill
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                if (isConfirmed) Color(0xFF10B981).copy(alpha = 0.2f)
+                                else Color(0xFFF59E0B).copy(alpha = 0.2f)
+                            )
+                            .border(
+                                1.dp,
+                                if (isConfirmed) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                RoundedCornerShape(50)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = status.uppercase(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isConfirmed) Color(0xFF34D399) else Color(0xFFFBBF24)
+                        )
+                    }
+
+                    // RED DOT INDICATOR AT STATUS BADGE (In-App Card Indicator)
+                    if (needsUserAction) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444))
+                        )
+                    }
+                }
             }
-        }
-    }
-}
 
-@Composable
-private fun OverlappingMatchImages(
-    imageUrl: String?,
-    matchedImageUrl: String?
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(88.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        NotificationAvatar(
-            imageUrl = imageUrl,
-            size = 72.dp,
-            modifier = Modifier.offset(x = 0.dp),
-            borderColor = Color(0xFF6366F1)
-        )
-        NotificationAvatar(
-            imageUrl = matchedImageUrl,
-            size = 72.dp,
-            modifier = Modifier.offset(x = 52.dp),
-            borderColor = Color(0xFF38BDF8)
-        )
-    }
-}
+            // --- CONDITIONAL BOTTOM ACTIONS (Confirm vs Open Chat) ---
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isConfirmed) {
+                    // 1. OPEN CHAT BUTTON (Only active when status is CONFIRMED)
+                    Button(
+                        onClick = onViewMatch,
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF6366F1), Color(0xFF38BDF8))
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Open Chat",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                } else if (!userAlreadyConfirmed) {
+                    // 2. CONFIRM REQUEST BUTTON (If match is pending and user hasn't confirmed yet)
+                    Button(
+                        onClick = onConfirmMatch,
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF10B981), Color(0xFF059669))
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Confirm Match",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // 3. WAITING STATUS BADGE
+                    Box(
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF334155)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "⏳ Waiting for Other User...",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFCBD5E1)
+                        )
+                    }
+                }
 
-@Composable
-private fun NotificationAvatar(
-    imageUrl: String?,
-    size: androidx.compose.ui.unit.Dp,
-    modifier: Modifier = Modifier,
-    borderColor: Color = Color.Transparent
-) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .border(2.5.dp, borderColor, CircleShape)
-            .background(Color(0xFF0F172A)),
-        contentAlignment = Alignment.Center
-    ) {
-        if (!imageUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(size)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Outlined.NotificationsNone,
-                contentDescription = null,
-                tint = Color(0xFF64748B),
-                modifier = Modifier.size(28.dp)
-            )
+                // DELETE / HIDE BUTTON
+                OutlinedButton(
+                    onClick = onDeleteMatch,
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0xFFF87171), Color(0xFFFB7185))
+                        )
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFFFCA5A5)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Delete",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFCA5A5),
+                        fontSize = 13.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -411,13 +494,7 @@ private fun ShimmerNotificationCard() {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(brush)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
                         .background(brush)
                 )

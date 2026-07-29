@@ -1,12 +1,18 @@
 package eu.tutorials.lostfoundapp.ui.matches
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,12 +20,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -28,6 +39,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -37,6 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,7 +58,7 @@ import androidx.compose.ui.unit.sp
 import eu.tutorials.lostfoundapp.R
 import eu.tutorials.lostfoundapp.model.MatchStatus
 import eu.tutorials.lostfoundapp.model.MatchWithDetails
-import eu.tutorials.lostfoundapp.ui.components.ItemSummaryCard
+import eu.tutorials.lostfoundapp.util.rememberBase64ImageBitmap
 import kotlin.math.roundToInt
 
 @Composable
@@ -55,8 +69,10 @@ fun MatchCard(
     onReject: () -> Unit,
     onOpenChat: () -> Unit = {},
     onHide: () -> Unit = {},
+    onImageClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val match = matchDetails.match
     val scorePercent = (match.matchScore * 100).roundToInt()
     val status = MatchStatus.fromString(match.status)
@@ -66,11 +82,11 @@ fun MatchCard(
         match.foundUserConfirmed
     }
 
-    // Outer Card Dark Glass Gradient (Translucent Dark Blue / Purple Tone)
+    // Outer Card Dark Glass Gradient
     val outerCardGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF1E1B4B).copy(alpha = 0.70f), // Dark Translucent Indigo/Blue
-            Color(0xFF0F172A).copy(alpha = 0.75f)  // Dark Translucent Slate
+            Color(0xFF1E1B4B).copy(alpha = 0.70f),
+            Color(0xFF0F172A).copy(alpha = 0.75f)
         )
     )
 
@@ -80,12 +96,12 @@ fun MatchCard(
             .animateContentSize()
             .border(
                 width = 1.dp,
-                color = Color(0xFF818CF8).copy(alpha = 0.35f), // Glowing subtle blue/violet border
+                color = Color(0xFF818CF8).copy(alpha = 0.35f),
                 shape = RoundedCornerShape(20.dp)
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent // White container ko completely remove kar diya
+            containerColor = Color.Transparent
         )
     ) {
         Column(
@@ -100,7 +116,6 @@ fun MatchCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Animated Translucent Score Tag
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -114,11 +129,42 @@ fun MatchCard(
                         text = stringResource(R.string.match_score, scorePercent),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFC7D2FE) // Bright soft blue text
+                        color = Color(0xFFC7D2FE)
                     )
                 }
 
                 MatchStatusChip(status = status)
+            }
+
+            // USER PROFILE HEADER (Shows Opposite User's Name)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF1E293B).copy(alpha = 0.6f))
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color(0xFF818CF8),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = if (matchDetails.isLostOwner) "Found by User" else "Lost by User",
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Text(
+                        text = matchDetails.otherUserName.ifBlank { "Unknown User" },
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             // Lost Item Summary
@@ -130,7 +176,8 @@ fun MatchCard(
                     description = lost.description,
                     location = lost.locationLost,
                     identifyingDetails = lost.identifyingDetails,
-                    imageUrl = lost.imageUrl
+                    imageUrl = lost.imageUrl,
+                    onImageClick = onImageClick
                 )
             }
 
@@ -143,8 +190,94 @@ fun MatchCard(
                     description = found.description,
                     location = found.locationFound,
                     identifyingDetails = found.identifyingDetails,
-                    imageUrl = found.imageUrl
+                    imageUrl = found.imageUrl,
+                    onImageClick = onImageClick
                 )
+            }
+
+            // --- PHONE NUMBER SECURITY / PRIVACY CHECK ---
+            if (status == MatchStatus.CONFIRMED) {
+                // UNLOCKED: Phone Number Shown + Direct Dial Button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF065F46).copy(alpha = 0.5f))
+                        .border(1.dp, Color(0xFF34D399).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = null,
+                            tint = Color(0xFF34D399),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Contact Number",
+                                fontSize = 10.sp,
+                                color = Color(0xFFA7F3D0)
+                            )
+                            Text(
+                                text = matchDetails.otherUserPhoneNumber.ifBlank { "Not provided" },
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    if (matchDetails.otherUserPhoneNumber.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = Uri.parse("tel:${matchDetails.otherUserPhoneNumber}")
+                                }
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF10B981))
+                                .padding(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = "Call User",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                // LOCKED: Security Privacy Badge
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF334155).copy(alpha = 0.4f))
+                        .border(0.5.dp, Color(0xFF64748B).copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        tint = Color(0xFFFACC15),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Phone Number: •••••••••• (Confirms required)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFCBD5E1)
+                    )
+                }
             }
 
             // Interactive Actions Section
@@ -187,7 +320,7 @@ fun MatchCard(
                                 enabled = !isActionInProgress,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4F46E5) // Sci-fi Indigo Blue Button
+                                    containerColor = Color(0xFF4F46E5)
                                 )
                             ) {
                                 if (isActionInProgress) {
@@ -255,7 +388,7 @@ fun MatchCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF065F46).copy(alpha = 0.45f)) // Translucent Emerald Green
+                                .background(Color(0xFF065F46).copy(alpha = 0.45f))
                                 .border(0.5.dp, Color(0xFF34D399).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
                                 .padding(10.dp)
                         ) {
@@ -285,7 +418,7 @@ fun MatchCard(
                                     .height(46.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF3B82F6) // Bright Sci-Fi Blue
+                                    containerColor = Color(0xFF3B82F6)
                                 )
                             ) {
                                 Icon(
@@ -387,4 +520,102 @@ private fun MatchStatusChip(status: MatchStatus) {
         ),
         shape = RoundedCornerShape(50)
     )
+}
+
+@Composable
+fun ItemSummaryCard(
+    title: String,
+    itemName: String,
+    category: String,
+    description: String,
+    location: String,
+    identifyingDetails: String,
+    imageUrl: String?,
+    onImageClick: (String) -> Unit = {}
+) {
+    val imageBitmap = rememberBase64ImageBitmap(imageUrl ?: "")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFF0F172A).copy(alpha = 0.6f))
+            .border(0.5.dp, Color(0xFF334155), RoundedCornerShape(14.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF818CF8)
+        )
+
+        Text(
+            text = itemName,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+
+        if (description.isNotBlank()) {
+            Text(
+                text = description,
+                fontSize = 13.sp,
+                color = Color(0xFFCBD5E1)
+            )
+        }
+
+        if (location.isNotBlank()) {
+            Text(
+                text = "📍 $location",
+                fontSize = 12.sp,
+                color = Color(0xFF94A3B8)
+            )
+        }
+
+        if (imageBitmap != null && !imageUrl.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF020617))
+                    .clickable { onImageClick(imageUrl) }
+            ) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = itemName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.65f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ZoomIn,
+                            contentDescription = "Zoom",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Tap to enlarge",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

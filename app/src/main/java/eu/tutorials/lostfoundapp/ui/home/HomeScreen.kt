@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome // Gemini Sparkle Icon
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Report
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,8 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.tutorials.lostfoundapp.model.User
 import eu.tutorials.lostfoundapp.ui.components.Lottie3DBackground
+import eu.tutorials.lostfoundapp.viewmodel.NotificationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,8 +63,13 @@ fun HomeScreen(
     onViewMatches: () -> Unit,
     onViewNotifications: () -> Unit,
     onOpenAiAssistant: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    // Add ViewModel to access the unreadCount
+    notificationViewModel: NotificationViewModel = viewModel()
 ) {
+    // Observe unread notification count
+    val unreadCount by notificationViewModel.unreadCount.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,33 +82,47 @@ fun HomeScreen(
                     )
                 },
                 actions = {
-                    // --- 1. HIGHLIGHTED NOTIFICATION BUTTON ---
+                    // --- 1. DYNAMIC NUMBER NOTIFICATION BUTTON ---
                     Box(
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .size(42.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.12f))
+                            .background(Color.White.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         IconButton(
-                            onClick = onViewNotifications,
+                            onClick = {
+                                notificationViewModel.markNotificationsAsSeen()
+                                onViewNotifications()
+                            },
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notifications",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            BadgedBox(
+                                badge = {
+                                    if (unreadCount > 0) {
+                                        Badge(
+                                            containerColor = Color(0xFFFF5252),
+                                            contentColor = Color.White,
+                                            modifier = Modifier.padding(bottom = 6.dp, end = 6.dp)
+                                        ) {
+                                            Text(
+                                                text = unreadCount.toString(),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                        // Notification Alert Badge (Red Indicator Dot)
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .align(Alignment.TopEnd)
-                                .padding(top = 4.dp, end = 4.dp)
-                                .background(Color(0xFFFF5252), CircleShape)
-                        )
                     }
 
                     // --- 2. HIGHLIGHTED GEMINI AI BUTTON ---

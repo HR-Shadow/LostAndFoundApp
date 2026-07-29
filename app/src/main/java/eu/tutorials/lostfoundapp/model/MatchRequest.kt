@@ -84,5 +84,7 @@ data class MatchWithDetails(
     val match: MatchRequest,
     val lostItem: LostItem?,
     val foundItem: FoundItem?,
-    val isLostOwner: Boolean
+    val isLostOwner: Boolean,
+    val otherUserName: String = "User",
+    val otherUserPhoneNumber: String = ""
 )
