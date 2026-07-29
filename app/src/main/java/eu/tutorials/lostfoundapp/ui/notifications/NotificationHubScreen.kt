@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,10 +41,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,19 +80,62 @@ fun NotificationHubScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
-    NotificationHubContent(
-        notifications = notifications,
-        isLoading = isLoading,
-        errorMessage = errorMessage,
-        onNavigateBack = onNavigateBack,
-        onViewMatch = onViewMatch,
-        onConfirmMatch = { matchId ->
-            viewModel.confirmMatchRequest(matchId)
-        },
-        onHideMatch = { matchId ->
-            viewModel.hideMatch(matchId)
+    // States for Delete/Hide Confirmation Dialog in Notification Hub
+    var matchToDeleteId by remember { mutableStateOf<String?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        NotificationHubContent(
+            notifications = notifications,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            onNavigateBack = onNavigateBack,
+            onViewMatch = onViewMatch,
+            onConfirmMatch = { matchId ->
+                viewModel.confirmMatchRequest(matchId)
+            },
+            onHideMatch = { matchId ->
+                // Trigger Confirmation Dialog instead of direct deletion
+                matchToDeleteId = matchId
+                showDeleteDialog = true
+            }
+        )
+
+        // Confirmation Dialog for Notification Hub Delete action
+        if (showDeleteDialog && matchToDeleteId != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    matchToDeleteId = null
+                },
+                title = { Text(text = "Confirm Removal") },
+                text = { Text(text = "Are you sure you want to remove this match notification? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            matchToDeleteId?.let { id ->
+                                viewModel.hideMatch(id)
+                            }
+                            showDeleteDialog = false
+                            matchToDeleteId = null
+                        }
+                    ) {
+                        Text("Confirm", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            matchToDeleteId = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
-    )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -222,7 +270,6 @@ private fun MatchNotificationCard(
                 ),
                 shape = RoundedCornerShape(20.dp)
             )
-            // NO .clickable HERE ON PURPOSE (Prevents accidental chat openings)
             .padding(18.dp)
     ) {
         Column(

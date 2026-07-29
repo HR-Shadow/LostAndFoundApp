@@ -13,40 +13,64 @@ import java.io.ByteArrayOutputStream
 
 /**
  * Converts image Uri to a compressed Base64 String to save directly in Firestore.
+ * Ensures image size strictly stays under ~150 KB to prevent Firestore 1MB doc limits.
  */
 fun uriToBase64(context: Context, uri: Uri?): String? {
     if (uri == null) return null
+    var originalBitmap: Bitmap? = null
+    var resizedBitmap: Bitmap? = null
+
     return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: return null
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        originalBitmap = BitmapFactory.decodeStream(inputStream) ?: return null
+        inputStream.close()
 
         val maxDimension = 600
         val width = originalBitmap.width
         val height = originalBitmap.height
-        val ratio = width.toFloat() / height.toFloat()
 
-        val targetWidth: Int
-        val targetHeight: Int
-
-        if (width > height) {
-            targetWidth = maxDimension
-            targetHeight = (maxDimension / ratio).toInt()
+        val (targetWidth, targetHeight) = if (width > height) {
+            val ratio = height.toFloat() / width.toFloat()
+            maxDimension to (maxDimension * ratio).toInt()
         } else {
-            targetHeight = maxDimension
-            targetWidth = (maxDimension * ratio).toInt()
+            val ratio = width.toFloat() / height.toFloat()
+            (maxDimension * ratio).toInt() to maxDimension
         }
 
-        val resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, targetWidth, targetHeight, true)
+        resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, targetWidth, targetHeight, true)
 
+        // Loop compression: Automatically lowers quality if size exceeds 150 KB
+        var quality = 65
+        var imageBytes: ByteArray
         val outputStream = ByteArrayOutputStream()
-        resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
-        val imageBytes = outputStream.toByteArray()
+
+        do {
+            outputStream.reset()
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+            imageBytes = outputStream.toByteArray()
+            quality -= 10
+        } while (imageBytes.size > 150 * 1024 && quality >= 20)
 
         Base64.encodeToString(imageBytes, Base64.NO_WRAP)
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    } finally {
+        // Free bitmap memory immediately
+        if (originalBitmap != resizedBitmap) {
+            originalBitmap?.recycle()
+        }
+        resizedBitmap?.recycle()
     }
+}
+
+/**
+ * Helper function to check exact size of Base64 String in KB
+ */
+fun getBase64SizeInKB(base64String: String): Double {
+    val cleanBase64 = if (base64String.contains(",")) base64String.substringAfter(",") else base64String
+    val sizeInBytes = (cleanBase64.length * 3) / 4
+    return sizeInBytes / 1024.0
 }
 
 /**

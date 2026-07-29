@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -67,6 +69,10 @@ fun MatchesScreen(
 
     // State for full-screen image zoom modal
     var selectedImageBase64 by remember { mutableStateOf<String?>(null) }
+
+    // States for Delete/Reject Confirmation Dialog
+    var matchToDeleteId by remember { mutableStateOf<String?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.errorMessage, state.successMessage) {
         state.errorMessage?.let {
@@ -173,7 +179,11 @@ fun MatchesScreen(
                                     matchDetails = match,
                                     isActionInProgress = state.actionInProgress == match.match.matchId,
                                     onConfirm = { viewModel.confirmMatch(match.match.matchId) },
-                                    onReject = { viewModel.rejectMatch(match.match.matchId) },
+                                    onReject = {
+                                        // Trigger Dialog instead of direct reject
+                                        matchToDeleteId = match.match.matchId
+                                        showDeleteDialog = true
+                                    },
                                     onImageClick = { base64 ->
                                         selectedImageBase64 = base64
                                     }
@@ -201,7 +211,9 @@ fun MatchesScreen(
                                         onNavigateToChat(match.match.matchId)
                                     },
                                     onHide = {
-                                        viewModel.hideMatch(match.match.matchId)
+                                        // Trigger Dialog instead of direct hide
+                                        matchToDeleteId = match.match.matchId
+                                        showDeleteDialog = true
                                     },
                                     onImageClick = { base64 ->
                                         selectedImageBase64 = base64
@@ -219,6 +231,42 @@ fun MatchesScreen(
             FullScreenImageModal(
                 imageBase64 = base64Image,
                 onDismiss = { selectedImageBase64 = null }
+            )
+        }
+
+        // Confirmation Dialog for Reject / Hide / Delete actions
+        if (showDeleteDialog && matchToDeleteId != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    matchToDeleteId = null
+                },
+                title = { Text(text = "Confirm Removal") },
+                text = { Text(text = "Are you sure you want to remove or reject this match? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            matchToDeleteId?.let { id ->
+                                // Call rejection/hiding based on current state logic safely
+                                viewModel.rejectMatch(id)
+                            }
+                            showDeleteDialog = false
+                            matchToDeleteId = null
+                        }
+                    ) {
+                        Text("Confirm", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            matchToDeleteId = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
             )
         }
     }
