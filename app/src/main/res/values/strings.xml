@@ -52,8 +52,8 @@
     <string name="lost_item_label">Lost Item</string>
     <string name="found_item_label">Found Item</string>
     <string name="this_is_mine">This is mine</string>
-    <string name="this_matches">I think this matches</string>
-    <string name="not_a_match">Not a match</string>
+    <string name="this_matches">match</string>
+    <string name="not_a_match">Not match</string>
     <string name="waiting_other_user">Waiting for the other user to confirm.</string>
     <string name="match_confirmed_message">Both users confirmed! You can now chat to verify and arrange the return.</string>
     <string name="chat_now">Chat Now</string>

@@ -2,8 +2,10 @@ package eu.tutorials.lostfoundapp.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+
 import eu.tutorials.lostfoundapp.model.FoundItem
 import eu.tutorials.lostfoundapp.model.ItemStatus
 import eu.tutorials.lostfoundapp.model.LostItem
@@ -93,6 +95,8 @@ class MatchRepository(
             "foundItemId" to found.itemId,
             "lostUserId" to lost.userId,
             "foundUserId" to found.userId,
+            "senderId" to currentUserId,
+            "receiverId" to (if (currentUserId == lost.userId) found.userId else lost.userId),
             "status" to MatchStatus.PENDING.value,
             "matchScore" to score,
             "timestamp" to System.currentTimeMillis(),
@@ -106,9 +110,9 @@ class MatchRepository(
     }
 
     fun observeUserMatches(): Flow<List<MatchRequest>> = callbackFlow {
+        // ✅ Version-Safe Standard Firestore Query
         val listener = firestore.collection(MATCH_REQUESTS)
             .whereArrayContains("participants", currentUserId)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
@@ -122,6 +126,7 @@ class MatchRepository(
                     ?.filter {
                         !it.hiddenFor.contains(currentUserId) && it.status != MatchStatus.REJECTED.value
                     }
+                    ?.sortedByDescending { it.timestamp }
                     ?: emptyList()
 
                 trySend(matches)
@@ -131,7 +136,6 @@ class MatchRepository(
             listener.remove()
         }
     }
-
     suspend fun loadMatchDetails(matches: List<MatchRequest>): List<MatchWithDetails> {
         return matches.map { match ->
             val lostItem = getLostItem(match.lostItemId)
@@ -203,7 +207,6 @@ class MatchRepository(
             "Match is no longer pending"
         }
 
-        // Updates status to REJECTED and auto-hides for current user simultaneously
         val updates = mapOf<String, Any>(
             "status" to MatchStatus.REJECTED.value,
             "hiddenFor" to FieldValue.arrayUnion(currentUserId)
